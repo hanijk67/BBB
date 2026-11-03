@@ -1,0 +1,12 @@
+# /etc/bigbluebutton/recording/recording.yml — override مراحل پردازش ضبط (T7)
+# هر دو فرمت: presentation (پلیر HTML) + video (فایل ویدئویی قابل دانلود).
+# منبع: docs/docs/administration/customize.md («Enable the video recording format»).
+# ساخت video برای هر کلاس با meta_bbb-disable-recording-formats=video در create خاموش می‌شود.
+steps:
+  archive: "sanity"
+  sanity: "captions"
+  captions:
+    - "process:presentation"
+    - "process:video"
+  "process:presentation": "publish:presentation"
+  "process:video": "publish:video"

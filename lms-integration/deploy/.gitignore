@@ -1,0 +1,7 @@
+# .env واقعی شامل secret است — هرگز commit نشود
+.env
+.env.*
+!.env.example
+
+# خروجی ابزارها (locale-diff.py و ...)
+tools/out/

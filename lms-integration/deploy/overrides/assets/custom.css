@@ -1,0 +1,63 @@
+/*
+ * سفارشی‌سازی کلاینت html5 برای LMS — فاز ۳ (T5).
+ * با customStyleUrl در bbb-html5.yml از روی خود سرور BBB بارگذاری می‌شود
+ * (https://<BBB_DOMAIN><BBB_CUSTOM_ASSETS_URL>/custom.css). هیچ آدرس خارجی در این فایل نباشد.
+ *
+ * فونت: Vazirmatn v33.003 (SIL OFL 1.1، fonts/LICENSE-OFL.txt)، github.com/rastikerdar/vazirmatn
+ */
+
+@font-face {
+  font-family: 'Vazirmatn';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/Vazirmatn-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('./fonts/Vazirmatn-Medium.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./fonts/Vazirmatn-Bold.woff2') format('woff2');
+}
+
+/*
+ * فقط وقتی UI فارسی/راست‌به‌چپ است. intlAdapter.tsx مقدار html[lang] را به زبان جاری
+ * (مثلاً fa-IR) و body.lang-fa / dir="rtl" را ست می‌کند. فونت آیکون‌ها (bbb-icons) با
+ * !important تعریف شده و تغییر نمی‌کند.
+ */
+html[lang^="fa"] body,
+body.lang-fa,
+[dir="rtl"] {
+  font-family: 'Vazirmatn', Tahoma, 'Source Sans Pro', Arial, sans-serif;
+}
+
+html[lang^="fa"] :is(button, input, textarea, select),
+[dir="rtl"] :is(button, input, textarea, select) {
+  font-family: inherit;
+}
+
+/*
+ * جهت متن پیام‌های چت: هر پاراگراف جهتش را از اولین حرف قوی خودش می‌گیرد، تا پیام فارسی در
+ * UI انگلیسی (و برعکس) و پیام مخلوط درست چیده شود. در همه‌ی زبان‌ها اعمال می‌شود.
+ * selector ها data-test پایدار سورس هستند، نه کلاس هش‌شده‌ی styled-components:
+ *   messageContent      → chat-message-list/page/chat-message/message-content/text-content
+ *   chatMessageReplied  → chat-message-list/page/chat-message/message-replied
+ *   #message-input      → chat-graphql/chat-message-form (کادر نوشتن پیام؛ id ثابت)
+ */
+[data-test="messageContent"],
+[data-test="messageContent"] p,
+[data-test="chatMessageReplied"],
+#message-input {
+  unicode-bidi: plaintext;
+  text-align: start;
+}
