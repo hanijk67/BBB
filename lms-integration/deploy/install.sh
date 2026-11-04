@@ -14,9 +14,12 @@ BBB_DATA=/var/bigbluebutton
 
 require_root
 load_env "${1:-}"
-require_vars BBB_DOMAIN BBB_LETSENCRYPT_EMAIL BBB_VERSION BBB_SHARED_SECRET \
-             BBB_TURN_HOST BBB_TURN_SECRET BBB_RECORDINGS_DIR
-validate_turn_secret
+require_vars BBB_DOMAIN BBB_LETSENCRYPT_EMAIL BBB_VERSION BBB_SHARED_SECRET BBB_RECORDINGS_DIR
+# BBB_TURN_HOST خالی = TURN داخلی (coturn + haproxy روی 443 همین سرور)؛ پر = سرور TURN جدا (install-turn.sh)
+if [[ -n "${BBB_TURN_HOST:-}" ]]; then
+  require_vars BBB_TURN_SECRET
+  validate_turn_secret
+fi
 [[ "$BBB_SHARED_SECRET" != 330a8b08c3b4c61533e1d0c5ce1ac88f ]] \
   || die "BBB_SHARED_SECRET نباید secret پیش‌فرض سورس باشد؛ openssl rand -hex 32"
 ((${#BBB_SHARED_SECRET} >= 32)) || die "BBB_SHARED_SECRET حداقل ۳۲ کاراکتر باشد (openssl rand -hex 32)"
@@ -68,8 +71,20 @@ log "مرحله ۳: اجرای bbb-install.sh -v $BBB_VERSION -s $BBB_DOMAIN"
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
 fetch_bbb_install "$WORK_DIR/bbb-install.sh"
-"$WORK_DIR/bbb-install.sh" -v "$BBB_VERSION" -s "$BBB_DOMAIN" -e "$BBB_LETSENCRYPT_EMAIL" \
-  -c "$BBB_TURN_HOST:$BBB_TURN_SECRET"
+bbb_install_args=(-v "$BBB_VERSION" -s "$BBB_DOMAIN" -e "$BBB_LETSENCRYPT_EMAIL")
+TURN_OVERRIDE=/etc/bigbluebutton/turn-stun-servers.xml
+if [[ -n "${BBB_TURN_HOST:-}" ]]; then
+  log "TURN: سرور جدا $BBB_TURN_HOST"
+  bbb_install_args+=(-c "$BBB_TURN_HOST:$BBB_TURN_SECRET")
+else
+  log "TURN: داخلی (bbb-install بدون -c → coturn + haproxy روی 443 همین سرور)"
+  # override سرور TURN جدا از نصب قبلی، تنظیم داخلی را می‌پوشاند → کنار گذاشته شود
+  if [[ -f "$TURN_OVERRIDE" ]]; then
+    mv "$TURN_OVERRIDE" "$TURN_OVERRIDE.external.$(date +%Y%m%d%H%M%S).bak"
+    warn "$TURN_OVERRIDE (TURN جدای قبلی) کنار گذاشته شد"
+  fi
+fi
+"$WORK_DIR/bbb-install.sh" "${bbb_install_args[@]}"
 ok "bbb-install.sh تمام شد"
 
 # --- ۴) /var/bigbluebutton روی BBB_RECORDINGS_DIR (bind mount) ---

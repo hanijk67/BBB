@@ -40,7 +40,8 @@ deploy/
 
 ## ترتیب اجرا
 
-1. **TURN** (سرور جدا): `sudo ./install-turn.sh` → از بیرون `tools/check-turn.sh`
+1. **TURN**: پیش‌فرض داخلی است (`BBB_TURN_HOST` خالی) و قدمی ندارد. فقط برای TURN جدا:
+   `sudo ./install-turn.sh` روی سرور TURN → از بیرون `tools/check-turn.sh`
 2. **BBB**: `sudo tools/preflight.sh` → `sudo ./install.sh`
 3. **apply-config**: خودکار با هر `bbb-conf --restart`؛ دستی:
    `sudo /etc/bigbluebutton/bbb-conf/apply-config.sh && sudo bbb-conf --restart`
@@ -53,20 +54,37 @@ deploy/
 - [ ] سرور BBB: Ubuntu 24.04 تمیز (بدون apache/nginx/panel)، کرنل 6.x، x86_64
 - [ ] سرور BBB: production حداقل 8 هسته‌ی dedicated، 16GB RAM + swap (تست: 4 هسته / 8GB)
 - [ ] سرور BBB: دیسک جدا برای ضبط، mount شده روی مسیر `BBB_RECORDINGS_DIR` (مستند رسمی: 500GB)
-- [ ] سرور BBB: IP عمومی ثابت؛ فایروال بیرونی TCP 80، 443 و UDP 16384-32768 باز
+- [ ] سرور BBB: IP عمومی ثابت؛ فایروال بیرونی TCP 80، 443، UDP 16384-32768 و (TURN داخلی) TCP/UDP 3478 باز
 - [ ] DNS: `class.glmp.ir → <BBB_IP>` (`dig +short class.glmp.ir`)
+- [ ] شبکه: دسترسی سرور BBB به `ubuntu.bigbluebutton.org`، GitHub raw، Let's Encrypt و
+      Docker Hub (یا `DOCKER_REGISTRY_MIRROR`) — `tools/preflight.sh` تست می‌کند
+- [ ] secret: `BBB_SHARED_SECRET` با `openssl rand -hex 32`
+
+فقط برای TURN جدا (`BBB_TURN_HOST` پر):
+
 - [ ] سرور TURN: VPS کوچک (1–2 هسته، 1–2GB)، Ubuntu 24.04 تمیز، IP عمومی جدا
 - [ ] DNS: `turn.glmp.ir → <TURN_IP>`
 - [ ] فایروال بیرونی TURN: TCP 22، 80؛ TCP/UDP 3478 و 443؛ UDP 32769-65535
-- [ ] شبکه: دسترسی سرور BBB به `ubuntu.bigbluebutton.org`، GitHub raw، Let's Encrypt و
-      Docker Hub (یا `DOCKER_REGISTRY_MIRROR`) — `tools/preflight.sh` تست می‌کند
-- [ ] secretها: `BBB_SHARED_SECRET` با `openssl rand -hex 32`؛ `BBB_TURN_SECRET` ۸–۱۶ کاراکتر
-      حرف/عدد (مثلاً `openssl rand -hex 8`) — روی هر دو سرور یکی
+- [ ] `BBB_TURN_SECRET` ۸–۱۶ کاراکتر حرف/عدد (مثلاً `openssl rand -hex 8`) — روی هر دو سرور یکی
 
 ## TURN (T3)
 
 دانشجوهایی که UDP ندارند (اینترنت موبایل، شبکه‌ی محدود) فقط از طریق TURN روی TCP/TLS 443 صدا و
-تصویر می‌گیرند. TURN پورت 443 را انحصاری می‌خواهد، پس روی سرور جدا است.
+تصویر می‌گیرند. دو حالت با `BBB_TURN_HOST`:
+
+### TURN داخلی (پیش‌فرض، `BBB_TURN_HOST` خالی)
+
+`install.sh` به `bbb-install.sh` گزینه‌ی `-c` نمی‌دهد → bbb-install خودش `bbb-coturn` را روی همین سرور
+نصب می‌کند (secret تصادفی در `/etc/turnserver.conf`) و `haproxy` را جلوی 443 می‌گذارد: اتصال با ALPN
+`stun.turn` به coturn (3478) و بقیه به nginx می‌رود. bbb-web آدرس `turns:class.glmp.ir:443?transport=tcp` و
+`turn:class.glmp.ir:3478` را به مرورگر می‌دهد. `enableUFWRules` (داخل apply-config) با دیدن haproxy پورت
+3478 را در ufw باز می‌کند. دامنه‌ی دوم و سرور دوم لازم نیست. اگر قبلاً TURN جدا بوده،
+`/etc/bigbluebutton/turn-stun-servers.xml` با پسوند `.bak` کنار گذاشته می‌شود. تست: `BBB_TURN_HOST=class.glmp.ir tools/check-turn.sh`
+(چک 443/TLS و 3478).
+
+### TURN جدا (`BBB_TURN_HOST=turn.glmp.ir`)
+
+برای بار زیاد: relay روی سرور دیگری می‌رود. چون 443 روی سرور TURN باید آزاد باشد، IP جدا لازم است.
 
 ```bash
 # روی سرور TURN (به‌عنوان root)
@@ -107,7 +125,7 @@ sudo ./install.sh
 ```
 
 مراحل `install.sh`: preflight → registry mirror (merge در `/etc/docker/daemon.json`) →
-`bbb-install.sh -v $BBB_VERSION -s $BBB_DOMAIN -e ... -c $BBB_TURN_HOST:$BBB_TURN_SECRET` (بدون `-g`) →
+`bbb-install.sh -v $BBB_VERSION -s $BBB_DOMAIN -e ...` (+ `-c $BBB_TURN_HOST:$BBB_TURN_SECRET` فقط برای TURN جدا؛ بدون `-g`) →
 bind mount `/var/bigbluebutton` روی `BBB_RECORDINGS_DIR` (با چک فضای دیسک و خط fstab بدون تکرار) →
 نصب `apply-config.sh` → `bbb-conf --restart` و `bbb-conf --check`.
 
@@ -128,9 +146,11 @@ bind mount `/var/bigbluebutton` روی `BBB_RECORDINGS_DIR` (با چک فضای 
 
 ## نصب اول
 
-1. سرور TURN: `cd /opt/lms-integration/deploy && cp .env.example .env && nano .env` → `sudo ./install-turn.sh`
-2. از لپ‌تاپ: `BBB_TURN_HOST=turn.glmp.ir tools/check-turn.sh` (همه PASS)
-3. سرور BBB: همان `.env` (با همان `BBB_TURN_SECRET`) → `sudo tools/preflight.sh` → `sudo ./install.sh`
+1. (فقط TURN جدا) سرور TURN: `cd /opt/lms-integration/deploy && cp .env.example .env && nano .env` → `sudo ./install-turn.sh`
+   و از لپ‌تاپ `BBB_TURN_HOST=turn.glmp.ir tools/check-turn.sh` (همه PASS)
+2. سرور BBB: `.env` (TURN داخلی: `BBB_TURN_HOST` خالی؛ TURN جدا: همان `BBB_TURN_SECRET`) →
+   `sudo tools/preflight.sh` → `sudo ./install.sh`
+3. (TURN داخلی) از لپ‌تاپ: `BBB_TURN_HOST=class.glmp.ir tools/check-turn.sh`
 4. چک‌های معیار پذیرش فاز ۲:
    ```bash
    curl -s https://class.glmp.ir/bigbluebutton/api | grep SUCCESS
@@ -167,8 +187,8 @@ python3 -I deploy/tools/locale-diff.py --check   # کلید ترجمه‌ی جد
   بعد از کپی `.env` به `/etc/bigbluebutton/lms/.env`)، بعد ری‌استارت virtual-classroom-service. بین این دو
   قدم کلاس جدید ساخته نمی‌شود (checksumError) — در ساعت بدون کلاس انجام دهید. callbackهای ضبطِ در صف با
   secret جدید امضا می‌شوند، پس مشکلی ندارند.
-- **TURN (`BBB_TURN_SECRET`)**: مقدار جدید در `.env` هر دو سرور → `sudo ./install-turn.sh` روی TURN و
-  `sudo ./install.sh` روی BBB.
+- **TURN (`BBB_TURN_SECRET`)**: فقط برای TURN جدا — مقدار جدید در `.env` هر دو سرور → `sudo ./install-turn.sh`
+  روی TURN و `sudo ./install.sh` روی BBB. TURN داخلی secret را خود bbb-install در `/etc/turnserver.conf` نگه می‌دارد.
 - **`BBB_CALLBACK_TOKEN`** (فقط LMS): تغییرش لینک meeting-ended جلسه‌های در حال اجرا را باطل می‌کند →
   وقتی کلاسی در حال برگزاری نیست.
 

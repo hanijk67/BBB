@@ -118,4 +118,4 @@ WebSocket و WebRTC (به TURN) مجازند.
 ## شبکه
 
 **N1 — TURN (T3).** D2 روی اینترنت موبایل؛ D1 در Firefox با `media.peerconnection.ice.relay_only=true`.
-معیار: صدا/تصویر هر دو کار کند؛ در `about:webrtc` کاندید `relay` با آدرس `turn.glmp.ir`.
+معیار: صدا/تصویر هر دو کار کند؛ در `about:webrtc` کاندید `relay` با آدرس IP سرور TURN (TURN داخلی: IP سرور `class.glmp.ir`؛ TURN جدا: `turn.glmp.ir`).
