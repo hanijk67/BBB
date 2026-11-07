@@ -1,0 +1,21 @@
+* [33m7188d278878[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mv4.0.x-develop[m[33m)[m first commit
+[31m|[m * [33mb11e0f901c9[m[33m ([m[1;31morigin/main[m[33m)[m first commit
+[31m|[m * [33ma8c8374ead4[m Create README.md
+[31m|[m * [33m49cc3c596b9[m Initial commit
+[31m|[m *   [33m2f984e2c08b[m[33m ([m[1;31morigin/v4.0.x-develop[m[33m, [m[1;31morigin/HEAD[m[33m)[m Merge pull request #26362 from antobinary/docs-400-client-log-html5log-logtag
+[31m|[m [33m|[m[34m\[m  
+[31m|[m [33m|[m * [33mf96f36b762c[m docs: replace the truncated sample client log entry
+[31m|[m [33m|[m * [33m2b58eb75460[m docs: add the logger example configuration-files.md promises
+[31m|[m [33m|[m * [33m19669163466[m docs: correct the HTML5 client log section of configuration-files.md
+[31m|[m [33m|[m[33m/[m  
+[31m|[m *   [33m506336605bb[m Merge pull request #26361 from antobinary/docs-400-client-settings-override-example-keys
+[31m|[m [35m|[m[36m\[m  
+[31m|[m [35m|[m * [33m5711976a925[m docs: fix the keys in the clientSettingsOverride create example
+[31m|[m [35m|[m[35m/[m  
+[31m|[m *   [33m9590840d14e[m Merge pull request #26270 from Tainan404/fix-chat-message-order-26134
+[31m|[m [1;31m|[m[1;32m\[m  
+[31m|[m [1;31m|[m * [33me06b577b13b[m fix(chat): stabilize message ordering
+[31m|[m * [1;32m|[m   [33m3784591031a[m Merge pull request #26345 from antobinary/fix-400-presentation-null-extension-and-docs-links
+[31m|[m [1;33m|[m[1;34m\[m [1;32m\[m  
+[31m|[m [1;33m|[m * [1;32m|[m [33mba683897839[m docs(api): point the supported-format links at the current lists
+[31m|[m [1;33m|[m * [1;32m|[m [33m985d70c1e16[m fix(bbb-web): refuse an extensionless URL document of an unlisted type cleanly
